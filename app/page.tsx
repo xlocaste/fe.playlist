@@ -4,18 +4,41 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-async function fetchLagus() {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/lagus`);
+async function fetchLagu() {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/lagu`);
   const data = await response.json();
-  return data.data || [];
+  console.log(data); // Tambahkan log ini untuk melihat struktur data
+  if (Array.isArray(data.data)) {
+    return data.data;
+  } else if (data.data && data.data.data) {
+    return data.data.data;
+  } else {
+    return [];
+  }
 }
 
+
+
 export default function HomePage() {
-  const [lagus, setLagus] = useState([]);
+  const [lagu, setLagu] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchLagus().then(data => setLagus(data));
+    fetchLagu()
+      .then(data => {
+        console.log(data);
+        setLagu(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message);
+        setLoading(false);
+      });
   }, []);
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error: {error}</p>;
 
   return (
     <div className="container mx-auto p-6">
@@ -28,20 +51,20 @@ export default function HomePage() {
         <table className="w-full table-auto border-collapse">
           <thead>
             <tr className="border-b-2 border-gray-200">
-              <th className="py-2 px-4 text-left">MP3</th>
-              <th className="py-2 px-4 text-left">Title</th>
+              <th className="py-2 px-4 text-left text-black">MP3</th>
+              <th className="py-2 px-4 text-left text-black">Title</th>
             </tr>
           </thead>
           <tbody>
-            {lagus.map((lagu) => (
+            {lagu.map((lagu) => (
               <tr key={lagu.id} className="border-b border-gray-100">
                 <td className="py-2 px-4">
                   <audio controls className="w-full">
-                    <source src={`${process.env.NEXT_PUBLIC_API_BACKEND}/storage/lagus/${lagu.mp3}`} type="audio/mp3" />
+                    <source src={`${process.env.NEXT_PUBLIC_API_BACKEND}/storage/lagu/${lagu.mp3}`} type="audio/mp3" />
                     Your browser does not support the audio element.
                   </audio>
                 </td>
-                <td className="py-2 px-4">{lagu.title}</td>
+                <td className="py-2 px-4 text-black">{lagu.title}</td>
               </tr>
             ))}
           </tbody>
