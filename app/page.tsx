@@ -17,8 +17,6 @@ async function fetchLagu() {
   }
 }
 
-
-
 export default function HomePage() {
   const [lagu, setLagu] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -53,6 +51,7 @@ export default function HomePage() {
             <tr className="border-b-2 border-gray-200">
               <th className="py-2 px-4 text-left text-black">MP3</th>
               <th className="py-2 px-4 text-left text-black">Title</th>
+              <th className="py-2 px-4 text-left text-black">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -65,6 +64,24 @@ export default function HomePage() {
                   </audio>
                 </td>
                 <td className="py-2 px-4 text-black">{lagu.title}</td>
+                <td className="py-2 px-4">
+                  <Link href={`/edit/${lagu.id}`}>
+                    <button className="bg-yellow-500 text-white font-bold py-1 px-3 rounded hover:bg-yellow-600 transition duration-300 mr-2">
+                      Edit
+                    </button>
+                  </Link>
+                  <Link href={`/detail/${lagu.id}`}>
+                    <button className="bg-green-500 text-white font-bold py-1 px-3 rounded hover:bg-green-600 transition duration-300 mr-2">
+                      Detail
+                    </button>
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(lagu.id)}
+                    className="bg-red-500 text-white font-bold py-1 px-3 rounded hover:bg-red-600 transition duration-300"
+                  >
+                    Hapus
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -72,4 +89,21 @@ export default function HomePage() {
       </div>
     </div>
   );
+
+  async function handleDelete(id: number) {
+    if (confirm('Apakah Anda yakin ingin menghapus lagu ini?')) {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/lagu/${id}`, {
+          method: 'DELETE',
+        });
+        if (response.ok) {
+          setLagu(lagu.filter(l => l.id !== id));
+        } else {
+          throw new Error('Gagal menghapus lagu');
+        }
+      } catch (error) {
+        setError(error.message);
+      }
+    }
+  }
 }
