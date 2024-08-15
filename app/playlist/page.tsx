@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-async function fetchLagu() {
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/lagu`);
+async function fetchPlaylists() {
+  const response = await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/playlist`);
   const data = await response.json();
   console.log(data); // Tambahkan log ini untuk melihat struktur data
   if (Array.isArray(data.data)) {
@@ -16,16 +16,16 @@ async function fetchLagu() {
   }
 }
 
-export default function HomePage() {
-  const [lagu, setLagu] = useState([]);
+export default function PlaylistPage() {
+  const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchLagu()
+    fetchPlaylists()
       .then(data => {
         console.log(data);
-        setLagu(data);
+        setPlaylists(data);
         setLoading(false);
       })
       .catch(err => {
@@ -39,48 +39,41 @@ export default function HomePage() {
 
   return (
     <div className="container mx-auto p-6">
-      <Link href="/add">
+      <Link href="/">
         <button className="bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-600 transition duration-300 mb-6">
-          Tambah Lagu
+          Kembali ke Halaman Utama
         </button>
       </Link>
-      <Link href="/playlist">
+      <Link href="/add-playlist">
         <button className="bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-600 transition duration-300 mb-6 ml-4">
-          Playlist
+          Tambah Playlist
         </button>
       </Link>
       <div className="bg-white shadow-md rounded-lg p-6">
         <table className="w-full table-auto border-collapse">
           <thead>
             <tr className="border-b-2 border-gray-200">
-              <th className="py-2 px-4 text-left text-black">MP3</th>
-              <th className="py-2 px-4 text-left text-black">Title</th>
+              <th className="py-2 px-4 text-left text-black">Nama Playlist</th>
               <th className="py-2 px-4 text-left text-black">Action</th>
             </tr>
           </thead>
           <tbody>
-            {lagu.map((lagu) => (
-              <tr key={lagu.id} className="border-b border-gray-100">
+            {playlists.map((playlist) => (
+              <tr key={playlist.id} className="border-b border-gray-100">
+                <td className="py-2 px-4 text-black">{playlist.title}</td>
                 <td className="py-2 px-4">
-                  <audio controls className="w-full">
-                    <source src={`${process.env.NEXT_PUBLIC_API_BACKEND}/storage/lagu/${lagu.mp3}`} type="audio/mp3" />
-                    Your browser does not support the audio element.
-                  </audio>
-                </td>
-                <td className="py-2 px-4 text-black">{lagu.title}</td>
-                <td className="py-2 px-4">
-                  <Link href={`/edit/${lagu.id}`}>
+                  <Link href={`/edit-playlist/${playlist.id}`}>
                     <button className="bg-yellow-500 text-white font-bold py-1 px-3 rounded hover:bg-yellow-600 transition duration-300 mr-2">
                       Edit
                     </button>
                   </Link>
-                  <Link href={`/detail/${lagu.id}`}>
+                  <Link href={`/playlist/${playlist.id}`}>
                     <button className="bg-green-500 text-white font-bold py-1 px-3 rounded hover:bg-green-600 transition duration-300 mr-2">
                       Detail
                     </button>
                   </Link>
                   <button
-                    onClick={() => handleDelete(lagu.id)}
+                    onClick={() => handleDelete(playlist.id)}
                     className="bg-red-500 text-white font-bold py-1 px-3 rounded hover:bg-red-600 transition duration-300"
                   >
                     Hapus
@@ -95,15 +88,15 @@ export default function HomePage() {
   );
 
   async function handleDelete(id: number) {
-    if (confirm('Apakah Anda yakin ingin menghapus lagu ini?')) {
+    if (confirm('Apakah Anda yakin ingin menghapus playlist ini?')) {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/lagu/${id}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/playlist/${id}`, {
           method: 'DELETE',
         });
         if (response.ok) {
-          setLagu(lagu.filter(l => l.id !== id));
+          setPlaylists(playlists.filter(p => p.id !== id));
         } else {
-          throw new Error('Gagal menghapus lagu');
+          throw new Error('Gagal menghapus playlist');
         }
       } catch (error) {
         setError(error.message);
