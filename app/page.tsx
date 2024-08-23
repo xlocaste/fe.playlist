@@ -76,6 +76,11 @@ export default function HomePage() {
             Playlist
           </button>
         </Link>
+        <Link href="/auth/login" className='ml-4'>
+          <button className="bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-600 transition duration-300">
+            Login
+          </button>
+        </Link>
       </div>
       <div className="border border-gray-600 bg-gray-900 text-white rounded-lg p-4 w-full">
         <h1 className="text-3xl font-bold mb-6">Daftar Lagu</h1> {/* Judul Halaman */}
