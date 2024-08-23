@@ -1,4 +1,5 @@
 // app/add/page.tsx
+
 'use client';
 
 import { useState } from 'react';
@@ -36,22 +37,23 @@ export default function AddPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 bg-gray-900 text-white min-h-screen">
-      <div className="bg-gray-800 shadow-lg rounded-lg p-8 max-w-lg mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Add New Song</h1>
-        <form onSubmit={handleSubmit}>
-          <div className="mb-5">
-            <label htmlFor="title" className="block text-gray-300 text-lg font-semibold mb-2">Title</label>
+    <div className="container mx-auto p-6">
+      <div className= "p-8 max-w-lg mx-auto card-body">
+        <h1 className="text-3xl font-bold mb-6 text-white">Tambah Lagu Baru</h1>
+        <form onSubmit={handleSubmit} encType="multipart/form-data" className='space-y-6'>
+          <div className="form-group mb-5">
+            <label htmlFor="title" className="block text-gray-300 text-lg font-semibold mb-2">Judul</label>
             <input
               type="text"
               id="title"
               className="border border-gray-600 bg-gray-900 text-white rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              placeholder="Masukkan Judul Lagu"
               required
             />
           </div>
-          <div className="mb-5">
+          <div className="form-group mb-5">
             <label htmlFor="mp3" className="block text-gray-300 text-lg font-semibold mb-2">MP3 File</label>
             <input
               type="file"
@@ -66,7 +68,7 @@ export default function AddPage() {
             type="submit"
             className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition duration-300"
           >
-            Add Song
+            Tambah Lagu 
           </button>
         </form>
       </div>
