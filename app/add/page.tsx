@@ -1,9 +1,8 @@
-// app/add/page.tsx
-
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
 
 export default function AddPage() {
   const [title, setTitle] = useState('');
@@ -19,18 +18,18 @@ export default function AddPage() {
     }
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/lagu`, {
-        method: 'POST',
-        body: formData,
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/lagu`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      if (!response.ok) {
+      if (response.status === 201) {
+        console.log('Data added:', response.data);
+        router.push('/');
+      } else {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
-
-      const data = await response.json();
-      console.log('Data added:', data);
-      router.push('/');
     } catch (error) {
       console.error('Error adding data:', error);
     }
@@ -38,9 +37,9 @@ export default function AddPage() {
 
   return (
     <div className="container mx-auto p-6">
-      <div className= "p-8 max-w-lg mx-auto card-body">
+      <div className="p-8 max-w-lg mx-auto card-body">
         <h1 className="text-3xl font-bold mb-6 text-white">Tambah Lagu Baru</h1>
-        <form onSubmit={handleSubmit} encType="multipart/form-data" className='space-y-6'>
+        <form onSubmit={handleSubmit} encType="multipart/form-data" className="space-y-6">
           <div className="form-group mb-5">
             <label htmlFor="title" className="block text-gray-300 text-lg font-semibold mb-2">Judul</label>
             <input
@@ -68,7 +67,7 @@ export default function AddPage() {
             type="submit"
             className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition duration-300"
           >
-            Tambah Lagu 
+            Tambah Lagu
           </button>
         </form>
       </div>

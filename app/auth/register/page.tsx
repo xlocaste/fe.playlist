@@ -1,4 +1,5 @@
-// app/auth/register/page.tsx
+"use client";
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -9,7 +10,8 @@ const Register = () => {
     password: '',
     password_confirmation: ''
   });
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [generalError, setGeneralError] = useState<string | null>(null);
   const router = useRouter();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -17,13 +19,31 @@ const Register = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
+
+    // Reset specific field error when user modifies the input
+    if (errors[e.target.name]) {
+      setErrors({
+        ...errors,
+        [e.target.name]: ''
+      });
+    }
+
+    // Reset general error
+    if (generalError) {
+      setGeneralError(null);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+    setGeneralError(null); // Reset error sebelum permintaan baru
 
     try {
-      const response = await fetch('http://localhost/api/register', {
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/register`;
+      console.log('API URL:', apiUrl); // Log URL untuk debugging
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -31,71 +51,104 @@ const Register = () => {
         body: JSON.stringify(formData)
       });
 
+      const responseText = await response.text(); // Ambil teks respons
+      console.log('Response Text:', responseText); // Log respons untuk debugging
+
       if (!response.ok) {
-        const data = await response.json();
-        setErrors(data.errors || {});
+        // Coba parsing JSON jika memungkinkan
+        try {
+          const data = JSON.parse(responseText);
+          setErrors(data.errors || {});
+          if (data.message) {
+            setGeneralError(data.message);
+          }
+        } catch (parseError) {
+          // Jika parsing gagal, set pesan error umum
+          setGeneralError('Terjadi kesalahan saat memproses permintaan.');
+        }
         return;
       }
 
+      // Registrasi berhasil, arahkan ke halaman login
       router.push('/auth/login');
     } catch (error) {
       console.error('Error:', error);
+      setGeneralError('Terjadi kesalahan yang tidak terduga.');
     }
   };
 
   return (
-    <div className="max-w-md mx-auto p-4">
-      <h1 className="text-xl font-bold mb-4">Register</h1>
+    <div className="max-w-md mx-auto p-6 shadow-md rounded-md mt-10">
+      <h1 className="text-2xl font-bold mb-6 text-center">Register</h1>
+      {generalError && <p className="text-red-500 text-sm mb-4 text-center">{generalError}</p>}
       <form onSubmit={handleSubmit}>
+        {/* Name Field */}
         <div className="mb-4">
-          <label className="block mb-2" htmlFor="name">Name</label>
+          <label className="block mb-2 font-medium" htmlFor="name">Name</label>
           <input
             type="text"
             name="name"
             id="name"
             value={formData.name}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            className={`text-black w-full p-2 border ${errors.name ? 'border-red-500' : 'border-gray-300'} rounded`}
+            required
           />
-          {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
+          {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
         </div>
+
+        {/* Email Field */}
         <div className="mb-4">
-          <label className="block mb-2" htmlFor="email">Email</label>
+          <label className="block mb-2 font-medium" htmlFor="email">Email</label>
           <input
             type="email"
             name="email"
             id="email"
             value={formData.email}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            className={`text-black w-full p-2 border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded`}
+            required
           />
-          {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+          {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
         </div>
+
+        {/* Password Field */}
         <div className="mb-4">
-          <label className="block mb-2" htmlFor="password">Password</label>
+          <label className="block mb-2 font-medium" htmlFor="password">Password</label>
           <input
             type="password"
             name="password"
             id="password"
             value={formData.password}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            className={`text-black w-full p-2 border ${errors.password ? 'border-red-500' : 'border-gray-300'} rounded`}
+            required
           />
-          {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
+          {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
         </div>
+
+        {/* Password Confirmation Field */}
         <div className="mb-4">
-          <label className="block mb-2" htmlFor="password_confirmation">Confirm Password</label>
+          <label className="block mb-2 font-medium" htmlFor="password_confirmation">Confirm Password</label>
           <input
             type="password"
             name="password_confirmation"
             id="password_confirmation"
             value={formData.password_confirmation}
             onChange={handleChange}
-            className="w-full p-2 border rounded"
+            className={`text-black w-full p-2 border ${errors.password_confirmation ? 'border-red-500' : 'border-gray-300'} rounded`}
+            required
           />
-          {errors.password_confirmation && <p className="text-red-500 text-sm">{errors.password_confirmation}</p>}
+          {errors.password_confirmation && <p className="text-red-500 text-sm mt-1">{errors.password_confirmation}</p>}
         </div>
-        <button type="submit" className="w-full p-2 bg-blue-500 text-white rounded">Register</button>
+
+        {/* Submit Button */}
+        <button
+          type="submit"
+          className="w-full p-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+        >
+          Register
+        </button>
       </form>
     </div>
   );

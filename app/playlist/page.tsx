@@ -2,15 +2,23 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Cookies from 'js-cookie';
 
 async function fetchPlaylists() {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/playlist`);
+    const token = Cookies.get('api_token'); // Ambil token dari cookie
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/playlist`, {
+      headers: {
+        'Authorization': `Bearer ${token}`, // Tambahkan header Authorization
+      },
+    });
+
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
+
     const data = await response.json();
-    console.log('Fetched Data:', data); // Log data untuk melihat strukturnya
+    console.log('Fetched Data:', data);
 
     return Array.isArray(data.data) 
       ? data.data 
@@ -31,7 +39,7 @@ export default function PlaylistPage() {
   useEffect(() => {
     fetchPlaylists()
       .then(data => {
-        console.log(data); // Log data untuk debugging
+        console.log(data);
         setPlaylists(data);
         setLoading(false);
       })
@@ -105,9 +113,14 @@ export default function PlaylistPage() {
   async function handleDelete(id: number) {
     if (confirm('Apakah Anda yakin ingin menghapus playlist ini?')) {
       try {
+        const token = Cookies.get('api_token'); // Ambil token dari cookie
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/playlist/${id}`, {
           method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`, // Tambahkan header Authorization
+          },
         });
+
         if (response.ok) {
           setPlaylists(playlists.filter(p => p.id !== id));
         } else {

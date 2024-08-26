@@ -1,91 +1,93 @@
 // app/lagu/[id]/EditForm.tsx
 
-'use client';
-
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { useRouter } from 'next/navigation';
 
 interface EditFormProps {
-    initialData: {
-        title: string;
-        mp3: string;
-    };
-    id: number;
+  initialData: {
+    title: string;
+    mp3: string;
+  };
+  id: string;
+  isNew?: boolean; // Tambahkan properti ini untuk membedakan antara POST dan PUT
 }
 
-function EditForm({ initialData, id }: EditFormProps) {
-    const [title, setTitle] = useState<string>(initialData.title || '');
-    const [mp3File, setMp3File] = useState<File | null>(null);
-    const router = useRouter();
+export default function EditForm({ initialData, id, isNew = false }: EditFormProps) {
+  const [title, setTitle] = useState(initialData.title || '');
+  const [mp3, setMp3] = useState(initialData.mp3 || '');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
-    // Mengupdate state saat initialData berubah
-    useEffect(() => {
-        if (initialData) {
-            setTitle(initialData.title);
-        }
-    }, [initialData]);
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoading(true);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    try {
+      const endpoint = isNew 
+        ? `${process.env.NEXT_PUBLIC_API_BACKEND}/api/lagu` 
+        : `${process.env.NEXT_PUBLIC_API_BACKEND}/api/lagu/${id}`;
 
-        const formData = new FormData();
-        formData.append('title', title);
-        if (mp3File) {
-            formData.append('mp3', mp3File);
-        }
-        formData.append('_method', 'PUT');
+      const method = isNew ? 'POST' : 'PUT';
 
-        try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/lagu/${id}`, {
-                method: 'POST',
-                body: formData,
-            });
+      const response = await axios({
+        method,
+        url: endpoint,
+        data: { title, mp3 },
+      });
 
-            if (response.ok) {
-                const data = await response.json();
-                console.log('Success:', data);
-                router.push('/'); // Redirect ke halaman daftar lagu setelah berhasil
-            } else {
-                console.error('Error:', response.statusText);
-            }
-        } catch (error) {
-            console.error('Fetch error:', error);
-        }
-    };
+      if (response.status === 200 || response.status === 201) {
+        router.push('/');
+      } else {
+        throw new Error('Gagal menyimpan data lagu.');
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return (
-        <form onSubmit={handleSubmit} encType="multipart/form-data" className="space-y-6">
-            <div className="form-group mb-5">
-                <label className="block text-gray-300 text-lg font-semibold mb-2">Judul</label>
-                <input
-                    type="text"
-                    className="border border-gray-600 bg-gray-900 text-white rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Enter song title"
-                    required
-                />
-            </div>
+  useEffect(() => {
+    if (!isNew) {
+      setTitle(initialData.title || '');
+      setMp3(initialData.mp3 || '');
+    }
+  }, [initialData, isNew]);
 
-            <div className="form-group mb-5">
-                <label htmlFor="mp3" className="block text-gray-300 text-lg font-semibold mb-2">MP3 File (Optional)</label>
-                <input
-                    type="file"
-                    id="mp3"
-                    className="border border-gray-600 bg-gray-900 text-white rounded-lg p-3 w-full file:border-0 file:bg-blue-500 file:text-white file:font-semibold hover:file:bg-blue-600"
-                    accept="audio/mp3"
-                    onChange={(e) => setMp3File(e.target.files ? e.target.files[0] : null)}
-                />
-            </div>
-
-            <button
-                type="submit"
-                className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition duration-300"
-            >
-                Simpan Perubahan
-            </button>
-        </form>
-    );
+  return (
+    <form onSubmit={handleSubmit} className="bg-gray-800 p-6 rounded-lg shadow-lg">
+      <div className="mb-4">
+        <label htmlFor="title" className="block text-white text-sm font-bold mb-2">Title</label>
+        <input
+          id="title"
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="form-input w-full p-2 border border-gray-600 rounded bg-gray-900 text-white"
+          required
+        />
+      </div>
+      <div className="mb-4">
+        <label htmlFor="mp3" className="block text-white text-sm font-bold mb-2">MP3 File URL</label>
+        <input
+          id="mp3"
+          type="text"
+          value={mp3}
+          onChange={(e) => setMp3(e.target.value)}
+          className="form-input w-full p-2 border border-gray-600 rounded bg-gray-900 text-white"
+          required
+        />
+      </div>
+      {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+      <button
+        type="submit"
+        disabled={loading}
+        className={`bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-600 transition duration-300 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+      >
+        {loading ? 'Saving...' : (isNew ? 'Create' : 'Update')}
+      </button>
+    </form>
+  );
 }
-
-export default EditForm;

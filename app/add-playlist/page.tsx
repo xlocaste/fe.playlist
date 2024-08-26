@@ -9,20 +9,22 @@ export default function AddPlaylistPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+  
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/playlist`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': Cookies.get('XSRF-TOKEN') || '', // Token CSRF jika diperlukan
         },
+        credentials: 'include', // Pastikan cookie dikirim
         body: JSON.stringify({ title }),
       });
-
+  
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
-
+  
       const data = await response.json();
       console.log('Playlist added:', data);
       router.push('/playlist'); // Redirect ke halaman daftar playlist setelah berhasil
@@ -30,6 +32,7 @@ export default function AddPlaylistPage() {
       console.error('Error adding playlist:', error);
     }
   };
+  
 
   return (
     <div className="container mx-auto p-6">

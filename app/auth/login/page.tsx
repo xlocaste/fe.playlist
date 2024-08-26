@@ -1,88 +1,98 @@
-"use client";
+'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 
-const Login = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-  const [errors, setErrors] = useState<any>({});
-  const [generalError, setGeneralError] = useState<string | null>(null);
+const LoginPage = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+  useEffect(() => {
+    const getCsrfToken = async () => {
+      await axios.get(`${process.env.NEXT_PUBLIC_API_BACKEND}/sanctum/csrf-cookie`, {
+        withCredentials: true,
+      });
+    };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setGeneralError(null); // Reset error sebelum permintaan baru
+    getCsrfToken();
+  }, []);
+
+  const handleLogin = async (event: React.FormEvent) => {
+    event.preventDefault();
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        setErrors(data.errors || {});
-        if (data.message) {
-          setGeneralError(data.message); // Menyimpan pesan kesalahan umum
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BACKEND}/api/login`,
+        { email, password },
+        {
+          withCredentials: true,
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
         }
-        return;
-      }
+      );
 
-      const data = await response.json();
-      localStorage.setItem('access_token', data.access_token);
-      router.push('/'); // Ganti dengan rute yang sesuai
+      if (response.status === 200) {
+        // Simpan token di cookie
+        const token = response.data.access_token;
+        Cookies.set('api_token', token, { path: '/' });
+
+        // Set Authorization header untuk permintaan berikutnya
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+        // Redirect ke halaman utama
+        router.push('/');
+      } else {
+        setError('Login failed');
+      }
     } catch (error) {
-      console.error('Error:', error);
-      setGeneralError('An unexpected error occurred.'); // Kesalahan jaringan atau server
+      setError('An error occurred');
     }
   };
 
   return (
-    <div className="max-w-md mx-auto p-4">
-      <h1 className="text-xl font-bold mb-4">Login</h1>
-      {generalError && <p className="text-red-500 text-sm mb-4">{generalError}</p>}
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block mb-2" htmlFor="email">Email</label>
-          <input
-            type="email"
-            name="email"
-            id="email"
-            value={formData.email}
-            onChange={handleChange}
-            className="w-full p-2 border rounded text-black"
-          />
-          {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
-        </div>
-        <div className="mb-4">
-          <label className="block mb-2" htmlFor="password">Password</label>
-          <input
-            type="password"
-            name="password"
-            id="password"
-            value={formData.password}
-            onChange={handleChange}
-            className="w-full p-2 border rounded text-black"
-          />
-          {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
-        </div>
-        <button type="submit" className="w-full p-2 bg-blue-500 text-white rounded">Login</button>
-      </form>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-md">
+        <h1 className="text-2xl font-bold mb-4">Login</h1>
+        {error && <p className="text-red-500 mb-4">{error}</p>}
+        <form onSubmit={handleLogin}>
+          <div className="mb-4">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="text-black mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-opacity-50"
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+            <input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="text-black mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:ring-opacity-50"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring focus:ring-blue-500 focus:ring-opacity-50"
+          >
+            Login
+          </button>
+        </form>
+      </div>
     </div>
   );
 };
 
-export default Login;
+export default LoginPage;
