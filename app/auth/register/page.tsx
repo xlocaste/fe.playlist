@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -40,40 +41,27 @@ const Register = () => {
     setGeneralError(null); // Reset error sebelum permintaan baru
 
     try {
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/register`;
-      console.log('API URL:', apiUrl); // Log URL untuk debugging
-
-      const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-      });
-
-      const responseText = await response.text(); // Ambil teks respons
-      console.log('Response Text:', responseText); // Log respons untuk debugging
-
-      if (!response.ok) {
-        // Coba parsing JSON jika memungkinkan
-        try {
-          const data = JSON.parse(responseText);
-          setErrors(data.errors || {});
-          if (data.message) {
-            setGeneralError(data.message);
-          }
-        } catch (parseError) {
-          // Jika parsing gagal, set pesan error umum
-          setGeneralError('Terjadi kesalahan saat memproses permintaan.');
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_BACKEND}/api/register`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          withCredentials: true,
         }
-        return;
-      }
+      );
 
-      // Registrasi berhasil, arahkan ke halaman login
+      // Jika berhasil, arahkan ke halaman login
       router.push('/auth/login');
-    } catch (error) {
-      console.error('Error:', error);
-      setGeneralError('Terjadi kesalahan yang tidak terduga.');
+    } catch (error: any) {
+      if (error.response && error.response.data) {
+        setErrors(error.response.data.errors || {});
+        setGeneralError(error.response.data.message || 'Terjadi kesalahan yang tidak terduga.');
+      } else {
+        setGeneralError('Terjadi kesalahan yang tidak terduga.');
+      }
     }
   };
 

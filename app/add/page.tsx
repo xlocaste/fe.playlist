@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import Cookies from 'js-cookie';
 
 export default function AddPage() {
   const [title, setTitle] = useState('');
@@ -18,10 +19,15 @@ export default function AddPage() {
     }
 
     try {
+      // Mendapatkan token dari cookie
+      const token = Cookies.get('api_token');
+
       const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/lagu`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`, // Menambahkan Authorization header
         },
+        withCredentials: true, // Menyertakan cookie dalam permintaan
       });
 
       if (response.status === 201) {

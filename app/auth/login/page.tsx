@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import Link from 'next/link';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -23,7 +24,7 @@ const LoginPage = () => {
 
   const handleLogin = async (event: React.FormEvent) => {
     event.preventDefault();
-
+  
     try {
       const response = await axios.post(
         `${process.env.NEXT_PUBLIC_API_BACKEND}/api/login`,
@@ -36,17 +37,16 @@ const LoginPage = () => {
           },
         }
       );
-
+  
       if (response.status === 200) {
-        // Simpan token di cookie
-        const token = response.data.access_token;
-        Cookies.set('api_token', token, { path: '/' });
-
-        // Set Authorization header untuk permintaan berikutnya
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-        // Redirect ke halaman utama
-        router.push('/');
+        const token = response.data.access_token; // Pastikan ini sesuai dengan respons backend
+        if (token) {
+          Cookies.set('api_token', token, { path: '/' }); // Menyimpan token di cookie
+          axios.defaults.headers.common['Authorization'] = `Bearer ${token}`; // Set default header
+          router.push('/');
+        } else {
+          setError('Login failed: No token received');
+        }
       } else {
         setError('Login failed');
       }
@@ -54,6 +54,7 @@ const LoginPage = () => {
       setError('An error occurred');
     }
   };
+  
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -90,6 +91,13 @@ const LoginPage = () => {
             Login
           </button>
         </form>
+        <div>
+        <Link href="/auth/register" passHref>
+          <p className="text-black py-2 px-4 rounded-lg">
+            Register
+          </p>
+        </Link>
+        </div>
       </div>
     </div>
   );

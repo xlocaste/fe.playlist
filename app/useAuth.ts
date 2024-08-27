@@ -1,10 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
-import { useRouter } from 'next/navigation';
 
 export function useAuth() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const router = useRouter();
 
   useEffect(() => {
     const token = Cookies.get('api_token');
@@ -12,9 +10,9 @@ export function useAuth() {
   }, []);
 
   const logout = () => {
-    Cookies.remove('api_token');
+    Cookies.remove('api_token'); // Hapus token saat logout
     setIsLoggedIn(false);
-    router.push('/auth/login');
+    // Redirect atau lakukan tindakan lain setelah logout
   };
 
   return { isLoggedIn, logout };

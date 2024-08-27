@@ -7,11 +7,23 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import { useAuth } from './useAuth'; // Pastikan Anda memiliki custom hook ini
 
-async function fetchLagu() {
+const fetchLagu = async () => {
   try {
-    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/lagu`);
-    const data = response.data;
+    const token = Cookies.get('api_token');
+    if (!token) {
+      console.error('Token tidak ditemukan!');
+      return [];
+    }
 
+    const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/lagu`, {
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      withCredentials: true,
+    });
+
+    const data = response.data;
     if (Array.isArray(data)) {
       return data;
     } else if (data.data && Array.isArray(data.data)) {
@@ -24,7 +36,8 @@ async function fetchLagu() {
     console.error('Terjadi kesalahan saat mengambil data:', error);
     return [];
   }
-}
+};
+
 
 export default function HomePage() {
   const [lagu, setLagu] = useState([]);

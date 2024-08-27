@@ -1,134 +1,119 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
-
-async function fetchPlaylists() {
-  try {
-    const token = Cookies.get('api_token'); // Ambil token dari cookie
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/playlist`, {
-      headers: {
-        'Authorization': `Bearer ${token}`, // Tambahkan header Authorization
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log('Fetched Data:', data);
-
-    return Array.isArray(data.data) 
-      ? data.data 
-      : (data.data && Array.isArray(data.data.data)) 
-        ? data.data.data 
-        : [];
-  } catch (error) {
-    console.error('Fetch Error:', error);
-    throw new Error('Failed to fetch playlists');
-  }
-}
 
 export default function PlaylistPage() {
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    fetchPlaylists()
-      .then(data => {
-        console.log(data);
-        setPlaylists(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        setError(err.message);
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error: {error}</p>;
-
-  return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6 flex gap-4">
-        <Link href="/">
-          <button className="bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-600 transition duration-300">
-            Kembali ke Halaman Utama
-          </button>
-        </Link>
-        <Link href="/add-playlist">
-          <button className="bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-600 transition duration-300">
-            Tambah Playlist
-          </button>
-        </Link>
-      </div>
-      <div className="border border-gray-600 bg-gray-900 text-white rounded-lg p-3 w-full">
-        <table className="w-full table-auto border-collapse">
-          <thead>
-            <tr className="border-b-2 border-gray-600">
-              <th className="py-2 px-4 text-left">Nama Playlist</th>
-              <th className="py-2 px-4 text-left">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {playlists.length > 0 ? (
-              playlists.map(playlist => (
-                <tr key={playlist.id} className="border-b border-gray-600">
-                  <td className="py-2 px-4">{playlist.title}</td>
-                  <td className="py-2 px-4">
-                    <Link href={`/edit-playlist/${playlist.id}`}>
-                      <button className="bg-blue-500 text-white font-bold py-1 px-3 rounded hover:bg-blue-600 transition duration-300 mr-2">
-                        Edit
-                      </button>
-                    </Link>
-                    <Link href={`/laguplaylist/${playlist.id}`}>
-                      <button className="bg-blue-500 text-white font-bold py-1 px-3 rounded hover:bg-blue-600 transition duration-300 mr-2">
-                        Detail
-                      </button>
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(playlist.id)}
-                      className="bg-red-500 text-white font-bold py-1 px-3 rounded hover:bg-red-600 transition duration-300"
-                    >
-                      Hapus
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={2} className="py-4 text-center text-gray-500">Belum ada playlist.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
-  async function handleDelete(id: number) {
-    if (confirm('Apakah Anda yakin ingin menghapus playlist ini?')) {
+    const fetchPlaylists = async () => {
       try {
-        const token = Cookies.get('api_token'); // Ambil token dari cookie
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/playlist/${id}`, {
-          method: 'DELETE',
+        // Ambil token dari cookies
+        const token = Cookies.get('api_token'); // Pastikan nama cookie sesuai
+
+        // Cek jika token undefined, beri notifikasi atau handle kesalahan
+        if (!token) {
+          setError('Token tidak ditemukan!');
+          setLoading(false);
+          return;
+        }
+
+        // Mengambil data playlists dari API
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/playlist`, {
           headers: {
-            'Authorization': `Bearer ${token}`, // Tambahkan header Authorization
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${token}`
           },
+          withCredentials: true,
         });
 
-        if (response.ok) {
+        console.log('Response Data:', response.data);
+
+        // Mengakses data playlist dari respons API
+        setPlaylists(response.data.data.data || []);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching playlists:', error);
+        setError('Terjadi kesalahan saat mengambil data playlists.');
+        setLoading(false);
+      }
+    };
+
+    fetchPlaylists();
+  }, []);
+
+  const handleDelete = async (id: number) => {
+    if (confirm('Apakah Anda yakin ingin menghapus playlist ini?')) {
+      try {
+        const token = Cookies.get('api_token');
+        if (!token) {
+          setError('Token tidak ditemukan!');
+          return;
+        }
+        const response = await axios.delete(`${process.env.NEXT_PUBLIC_API_BACKEND}/api/playlist/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          withCredentials: true,
+        });
+        if (response.status === 200) {
           setPlaylists(playlists.filter(p => p.id !== id));
         } else {
           throw new Error('Gagal menghapus playlist');
         }
       } catch (error) {
-        setError(error.message);
+        setError('Terjadi kesalahan saat menghapus playlist.');
       }
     }
-  }
+  };
+
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>{error}</p>;
+
+  return (
+    <div className="container mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6">Your Playlists</h1>
+      <button
+        onClick={() => router.push('/playlist/add-playlist')}
+        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg transition duration-300 mb-4"
+      >
+        Add New Playlist
+      </button>
+      <ul className="space-y-4">
+        {Array.isArray(playlists) && playlists.map((playlist: any) => (
+          <li key={playlist.id} className="bg-gray-800 text-white p-4 rounded-lg shadow-lg">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">{playlist.title}</h2>
+              <div className="space-x-2">
+                <button
+                  onClick={() => router.push(`/laguplaylist/${playlist.id}`)}
+                  className="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded transition duration-300"
+                >
+                  Detail
+                </button>
+                <button
+                  onClick={() => router.push(`/edit-playlist/${playlist.id}`)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded transition duration-300"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(playlist.id)}
+                  className="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded transition duration-300"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
